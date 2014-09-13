@@ -62,7 +62,6 @@ doFib(int n, int doPrint)
 {
   int status_1,status_2;
   pid_t pid_1, pid_2;
-  int sum = 0;
 
   //base case
   if(n == 0){
