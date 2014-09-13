@@ -65,7 +65,13 @@ doFib(int n, int doPrint)
   int sum = 0;
 
   //base case
-  if(n == 1 || n==2){
+  if(n == 0){
+    if(doPrint){
+      printf("%d\n", 0);
+    }
+    exit(0);
+  }
+  else if(n == 1 || n==2){
     if(doPrint){
       printf("%d\n",1);
     }
@@ -83,7 +89,7 @@ doFib(int n, int doPrint)
       else if(pid_2 != 0){
         wait(&status_1);
         status_1 = WEXITSTATUS(status_1);
-        printf("status_1: %d\n", status_1);
+        // printf("status_1: %d\n", status_1);
 
         wait(&status_2);
         status_2 = WEXITSTATUS(status_2);
@@ -91,10 +97,6 @@ doFib(int n, int doPrint)
           printf("%d\n", status_1+status_2);
         }
         exit(status_1+status_2);
-      }
-
-      else{
-        doFib(n,0);
       }
   }
 }
