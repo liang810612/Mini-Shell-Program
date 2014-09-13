@@ -87,11 +87,11 @@ doFib(int n, int doPrint)
       if(pid_2 ==0)
         doFib(n-2, 0);
       else if(pid_2 != 0){
-        wait(&status_1);
+        waitpid(-1,&status_1,0);
         status_1 = WEXITSTATUS(status_1);
         // printf("status_1: %d\n", status_1);
 
-        wait(&status_2);
+        waitpid(-1,&status_2,0);
         status_2 = WEXITSTATUS(status_2);
         if(doPrint == 1){
           printf("%d\n", status_1+status_2);
