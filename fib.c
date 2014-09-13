@@ -78,20 +78,23 @@ doFib(int n, int doPrint)
   }
   //recursive call with child process
   else{
+    //first child process that do doFib(n-1)
     pid_1 = fork();
     if(pid_1 == 0){
       doFib(n-1,0);
     }
+    //secnod child process that do doFib(n-2)
       pid_2 = fork();
       if(pid_2 ==0)
         doFib(n-2, 0);
+      // parant process that reap all the child process
       else if(pid_2 != 0){
         waitpid(-1,&status_1,0);
         status_1 = WEXITSTATUS(status_1);
-        // printf("status_1: %d\n", status_1);
 
         waitpid(-1,&status_2,0);
         status_2 = WEXITSTATUS(status_2);
+        
         if(doPrint == 1){
           printf("%d\n", status_1+status_2);
         }
