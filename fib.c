@@ -60,7 +60,43 @@ int main(int argc, char **argv)
 static void 
 doFib(int n, int doPrint)
 {
-  
+  int status_1,status_2;
+  pid_t pid_1, pid_2;
+  int sum = 0;
+
+  //base case
+  if(n == 1 || n==2){
+    if(doPrint){
+      printf("%d\n",1);
+    }
+    exit(1);
+  }
+  //recursive call with child process
+  else{
+    pid_1 = fork();
+    if(pid_1 == 0){
+      doFib(n-1,0);
+    }
+      pid_2 = fork();
+      if(pid_2 ==0)
+        doFib(n-2, 0);
+      else if(pid_2 != 0){
+        wait(&status_1);
+        status_1 = WEXITSTATUS(status_1);
+        printf("status_1: %d\n", status_1);
+
+        wait(&status_2);
+        status_2 = WEXITSTATUS(status_2);
+        if(doPrint == 1){
+          printf("%d\n", status_1+status_2);
+        }
+        exit(status_1+status_2);
+      }
+
+      else{
+        doFib(n,0);
+      }
+  }
 }
 
 

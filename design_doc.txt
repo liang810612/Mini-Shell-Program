@@ -1,10 +1,10 @@
 ################
 YOUR INFO
 ################
-Name1:
-EID1:
-CS login:
-Email:
+Name1: Terry Liang
+EID1: twl378
+CS login: tliang
+Email: liang810612@hotmail.com
 Unique Number:
 
 Slip days used:
