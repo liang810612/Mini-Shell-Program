@@ -106,6 +106,7 @@ int main(int argc, char **argv)
 //Quote from book page 735
 void eval(char *cmdline) 
 {
+<<<<<<< Updated upstream
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];
     /* Holds modified command line */
@@ -137,6 +138,10 @@ void eval(char *cmdline)
         else
             printf("%d %s", pid, cmdline);
     }
+=======
+    
+    return;
+>>>>>>> Stashed changes
 }
 
 
@@ -149,9 +154,14 @@ void eval(char *cmdline)
 
 //Quote from book page 735
 int builtin_cmd(char **argv) 
+<<<<<<< Updated upstream
 {
     if (!strcmp(argv[0], "quit")) /* quit command */
     exit(0);
+=======
+{   
+
+>>>>>>> Stashed changes
     return 0;     /* not a builtin command */
 }
 

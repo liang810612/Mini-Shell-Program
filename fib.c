@@ -91,7 +91,7 @@ doFib(int n, int doPrint)
       else if(pid_2 != 0){
         waitpid(-1,&status_1,0);
         status_1 = WEXITSTATUS(status_1);
-
+        
         waitpid(-1,&status_2,0);
         status_2 = WEXITSTATUS(status_2);
         
