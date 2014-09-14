@@ -19,6 +19,7 @@
  */
 int main(int argc, char **argv)
 {
+	printf("Process ID: %d\n", (int)getpid());
   return 0;
 }
 
