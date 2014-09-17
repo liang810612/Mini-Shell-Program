@@ -120,9 +120,47 @@ int main(int argc, char **argv)
  * each child process must have a unique process group ID so that our
  * background children don't receive SIGINT (SIGTSTP) from the kernel
  * when we type ctrl-c (ctrl-z) at the keyboard.  
+ * some codes are copied from H&O pg. 735,757
 */
 void eval(char *cmdline) 
 {
+    char *argv[MAXARGS];
+    char buf[MAXLINE];
+    int bg;
+    pid_t pid;
+    // sigset_t mask;
+
+    strcpy(buf, cmdline);
+    bg = parseline(buf, argv);
+    if(argv[0] == NULL)
+        return;
+
+    if(!builtin_cmd(argv))
+        // Sigemptyset(&mask);
+        // sigaddset(&mask, SIGCHLD);
+        // Sigprocmask(SIG_BlOCK, &mask, NULL); // Block SIGCHLD
+        // child process
+        if(((pid = fork()) == 0)){
+            // Sigprocmask(SIG_UNBLOCK, &mask,NULL); // Unblock SIGCHLD
+            //setpgid(0,0);
+            if(execve(argv[0], argv, environ) < 0){
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+        }
+        //parent process in foreground
+        if(!bg){
+            int status;
+            // addjob(pid);
+            // Sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            if(waitpid(pid, &status, 0) < 0){}
+                unix_error("waitfg: waipid error");
+
+        }
+        //process in background
+        else
+            printf("Background process: %d %s", pid, cmdline);
+
     return;
 }
 
@@ -135,6 +173,23 @@ void eval(char *cmdline)
  */
 int builtin_cmd(char **argv) 
 {
+    if (!strcmp(argv[0], "quit")) /* quit command */
+        exit(0);
+    if (!strcmp(argv[0], "bg")){  /* background command */
+        do_bgfg(argv);
+        return 1;
+    }  
+    if (!strcmp(argv[0], "fg")){  /* foreground command */
+        do_bgfg(argv);
+        return 1;
+    }  
+    if (!strcmp(argv[0], "jobs")){ /* quit command */
+        listjobs(jobs);
+        return 1;
+    }
+    if (!strcmp(argv[0], "&"))   /* ignore singleton */
+        return 1; 
+
     return 0;     /* not a builtin command */
 }
 
@@ -151,6 +206,9 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    while(fgpid(jobs) == pid)
+        sleep(0);
+
     return;
 }
 
@@ -164,9 +222,31 @@ void waitfg(pid_t pid)
  *     received a SIGSTOP or SIGTSTP signal. The handler reaps all
  *     available zombie children, but doesn't wait for any other
  *     currently running children to terminate.  
+ *     Some codes are borrowed from B&O pg. 727
  */
 void sigchld_handler(int sig) 
 {
+    int status;
+    pid_t pid;
+    // Parent reaps children in no particular order
+    while((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0){
+        //terminated normally
+        if(WIFEXITED(status)){
+            printf("child %d terminated normally with exit status=%d\n",pid,WEXITSTATUS(status));
+            deletejob(jobs,pid);
+        }
+        //terminated by SIGINT
+        else if(WIFSIGNALED(status)){
+            printf("child %d terminated because of SIGINT",pid);
+            deletejob(jobs,pid);
+        }
+        //stoped by SIGTSTP
+        else if(WIFSTOPPED(status)){
+            printf("child %d stopped because of SIGTSTP",pid);
+            getjobpid(jobs,pid)->state = ST;
+        }
+    }
+
     return;
 }
 
@@ -177,6 +257,8 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+
+    kill(-fgpid(jobs),SIGINT);
     return;
 }
 
@@ -187,6 +269,7 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+    kill(-fgpid(jobs), SIGTSTP);
     return;
 }
 
