@@ -135,7 +135,6 @@ int pid2jid(struct job_t *jobs, pid_t pid)
 void listjobs(struct job_t *jobs) 
 {
     int i;
-    
     for (i = 0; i < MAXJOBS; i++) {
 	if (jobs[i].pid != 0) {
 	    printf("[%d] (%d) ", jobs[i].jid, jobs[i].pid);
