@@ -135,7 +135,7 @@ void eval(char *cmdline)
     if(argv[0] == NULL)
         return;
 
-    if(!builtin_cmd(argv))
+    if(!builtin_cmd(argv)){
         sigemptyset(&mask);
         sigaddset(&mask, SIGCHLD);
         sigprocmask(SIG_BLOCK, &mask, NULL); // Block SIGCHLD
@@ -147,22 +147,23 @@ void eval(char *cmdline)
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
             }
-        }
+        }        
+
         //parent process in foreground
         if(!bg){
             int status;
             addjob(jobs,pid,FG,cmdline);
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
-            if(waitpid(pid, &status, 0) < 0){}
+            if(waitpid(pid, &status, 0) < 0)
                 unix_error("waitfg: waipid error");
 
         }
         //process in background
         else{
             addjob(jobs,pid,BG,cmdline);
-            printf("Background process: %d %s", pid, cmdline);
+            printf("[%d] (%d) %s", pid2jid(jobs, pid), pid, cmdline); 
         }
-
+    }
     return;
 }
 
@@ -290,7 +291,7 @@ void sigchld_handler(int sig)
         }
         //stoped by SIGTSTP
         else if(WIFSTOPPED(status)){
-            printf("Job [%d] (%d) terminated by signal 2\n", pid2jid(jobs, pid), pid);
+            printf("Job [%d] (%d) stopped by signal 20\n", pid2jid(jobs, pid), pid);
             getjobpid(jobs,pid)->state = ST;
         }
     }
