@@ -128,7 +128,7 @@ void eval(char *cmdline)
     char buf[MAXLINE];
     int bg;
     pid_t pid;
-    // sigset_t mask;
+    sigset_t mask;
 
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
@@ -136,13 +136,13 @@ void eval(char *cmdline)
         return;
 
     if(!builtin_cmd(argv))
-        // Sigemptyset(&mask);
-        // sigaddset(&mask, SIGCHLD);
-        // Sigprocmask(SIG_BlOCK, &mask, NULL); // Block SIGCHLD
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGCHLD);
+        sigprocmask(SIG_BLOCK, &mask, NULL); // Block SIGCHLD
         // child process
         if(((pid = fork()) == 0)){
-            // Sigprocmask(SIG_UNBLOCK, &mask,NULL); // Unblock SIGCHLD
-            //setpgid(0,0);
+            sigprocmask(SIG_UNBLOCK, &mask,NULL); // Unblock SIGCHLD
+            setpgid(0,0);
             if(execve(argv[0], argv, environ) < 0){
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
@@ -151,15 +151,17 @@ void eval(char *cmdline)
         //parent process in foreground
         if(!bg){
             int status;
-            // addjob(pid);
-            // Sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            addjob(jobs,pid,FG,cmdline);
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);
             if(waitpid(pid, &status, 0) < 0){}
                 unix_error("waitfg: waipid error");
 
         }
         //process in background
-        else
+        else{
+            addjob(jobs,pid,BG,cmdline);
             printf("Background process: %d %s", pid, cmdline);
+        }
 
     return;
 }
@@ -198,6 +200,52 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+    if(argv[1] != NULL){
+        if(strcmp(argv[0], "bg") != 0 ||strcmp(argv[0], "fg") != 0){
+            printf("Wrong argument\n");
+            return;        
+        }       
+
+        else if(strcmp(argv[0],"bg") != 0){
+            //jid
+            if(argv[1][0] == '%'){
+                //parse jid
+                int jid = atoi(&argv[1][1]);
+                getjobpid(jobs,jid) -> state = BG;   
+                pid_t pid = getjobjid(jobs, jid)->pid;
+                printf("[%d] (%d) %s", jid, pid, getjobjid(jobs, jid)->cmdline);
+                kill(-pid, SIGCONT);                             
+            }
+            // pid
+            else{ 
+                int pid = atoi(argv[1]);
+                getjobpid(jobs,pid) -> state = BG; 
+                printf("[%d] (%d) %s", pid2jid(jobs, pid), pid, getjobpid(jobs, pid)->cmdline);
+                kill(-pid,SIGCONT);               
+            }
+        }
+        else{
+            if(argv[1][0] == '%'){
+                //parse jid
+                int jid = atoi(&argv[1][1]);
+                getjobpid(jobs,jid) -> state = FG; 
+                pid_t pid = getjobjid(jobs, jid)->pid;  
+                kill(-pid, SIGCONT);  
+                waitfg(pid);                           
+            }
+            // pid
+            else{ 
+                int pid = atoi(argv[1]);
+                getjobpid(jobs,pid) -> state = FG; 
+                kill(-pid,SIGCONT);  
+                waitfg(pid);             
+            }
+        }
+    }
+    else{
+        printf("Argument Required\n");
+        return;
+    }
     return;
 }
 
@@ -237,12 +285,12 @@ void sigchld_handler(int sig)
         }
         //terminated by SIGINT
         else if(WIFSIGNALED(status)){
-            printf("child %d terminated because of SIGINT",pid);
+            printf("Job [%d] (%d) terminated by signal 2\n", pid2jid(jobs, pid), pid);
             deletejob(jobs,pid);
         }
         //stoped by SIGTSTP
         else if(WIFSTOPPED(status)){
-            printf("child %d stopped because of SIGTSTP",pid);
+            printf("Job [%d] (%d) terminated by signal 2\n", pid2jid(jobs, pid), pid);
             getjobpid(jobs,pid)->state = ST;
         }
     }
