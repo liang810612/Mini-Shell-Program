@@ -122,6 +122,7 @@ int main(int argc, char **argv)
  * when we type ctrl-c (ctrl-z) at the keyboard.  
  * some codes are copied from H&O pg. 735,757
 */
+ //#Jishen driving now
 void eval(char *cmdline) 
 {
     char *argv[MAXARGS];
@@ -136,6 +137,8 @@ void eval(char *cmdline)
         return;
 
     if(!builtin_cmd(argv)){
+        //block SIGCHLD,SGSTP to avoid race condition.
+        // addjob will execute before deletejob
         sigemptyset(&mask);
         sigaddset(&mask, SIGCHLD);
         sigaddset(&mask, SIGTSTP);
@@ -168,7 +171,7 @@ void eval(char *cmdline)
     }
     return;
 }
-
+//#end of Jishen driving, Terry driving now 
 
 /* 
  * builtin_cmd - If the user has typed a built-in command then execute
@@ -197,132 +200,73 @@ int builtin_cmd(char **argv)
 
     return 0;     /* not a builtin command */
 }
-
+//#end of Terry driving
 /* 
  * do_bgfg - Execute the builtin bg and fg commands
  */
+
+ //#Terry and Jishen drove here
 void do_bgfg(char **argv) 
 {   
-    int pid;
-    struct job_t *job;
+    struct job_t *get_job;
+
     if(argv[1]!=NULL){
-        if (argv[1][0] == '%') {
+        if(atoi(argv[1])){
+            int pid = atoi(argv[1]);
+            get_job = getjobpid(jobs, pid);
+            if (get_job == NULL) {
+                printf("(%d): No such process \n", pid);
+                return;            
+            }            
+        }
+        //with %, get job id 
+        else if (argv[1][0] == '%') {
             int jid = atoi(&argv[1][1]);
-            job = getjobjid(jobs, jid); 
-                if (job == NULL) {
+            get_job = getjobjid(jobs, jid); 
+                if (getjobjid(jobs, jid) == NULL) {
                     printf("%%%d: No such job\n", jid);
                     return;
                 }           
         } 
-        else if(atoi(argv[1]) > 0){
-            pid = atoi(argv[1]);
-            job = getjobpid(jobs, pid);
-            if (job == NULL) {
-                printf("(%d): No such process\n", pid);
-                return;            
-            }            
-        }
+        //wrong input
         else{
             printf("%s: argument must be a PID or %%jobid\n", argv[0]);
             return;           
         }
+        // background job
+        if (!strcmp(argv[0], "bg")){
+            if ((*get_job).state == ST){
+                (*get_job).state = BG;
+                kill((*get_job).pid, SIGCONT);
+            }
+            printf("[%d] (%d) %s", (*get_job).jid, (*get_job).pid, (*get_job).cmdline);
+        } 
+        // foreground job
+        else if (!strcmp(argv[0], "fg")) {
+            if ((*get_job).state == ST ) {
+                (*get_job).state = FG;
+                kill((*get_job).pid, SIGCONT);
+                waitfg((*get_job).pid);
+            }
+            else if((*get_job).state == BG){
+                (*get_job).state = FG;
+                kill((*get_job).pid, SIGCONT);
+                waitfg((*get_job).pid);                
+            }
+        }
 
-    if (strcmp(argv[0], "bg") == 0){
-        if (job->state == ST){
-            job->state = BG;
-            killpg(job->pid, SIGCONT);
-        }
-        printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
-    } 
-    else if (strcmp(argv[0], "fg") == 0) {
-        if (job->state == ST || job->state == BG) {
-            job->state = FG;
-            killpg(job->pid, SIGCONT);
-            waitfg(job->pid);
-        }
     }
-    
+    else{
+        printf("%s command requires PID or %%jobid argument\n", argv[0]);        
+    }
+
     return;
-    }
 }
-    // if(argv[1] != NULL){
-    //     if(argv[1][0] == '%'){
-    //         if(!strcmp(argv[0], "bg")){
-    //             char* jid_num;
-    //             jid_num = &argv[1][1];
-    //             int jid;
-    //             // get jid
-    //             jid = atoi(jid_num);
-
-    //             getjobjid(jobs, jid)->state = FG;
-    //             // pid_t pid = getjobjid(jobs, jid)->pid;
-    //             // kill(-pid, SIGCONT);
-    //             // waitfg(pid);                
-    //             // int jid = atoi(&argv[1][1]);
-    //             // getjobpid(jobs,jid) -> state = BG;   
-    //             // pid_t pid = getjobjid(jobs, jid)->pid;
-    //             // printf("[%d] (%d) %s\n", jid, pid, getjobjid(jobs, jid)->cmdline);
-    //             // kill(-pid, SIGCONT);                   
-    //         }
-    //     } 
-    //     else{
-    //         return;
-    //     }
-    // }
-    //     if(!strcmp(argv[0],"bg")){
-    //         //jid
-    //         if(argv[1][0] == '%'){
-    //             //parse jid
-    //             printf("HERE3");
-    //             int jid = atoi(&argv[1][1]);
-    //             getjobpid(jobs,jid) -> state = BG;   
-    //             pid_t pid = getjobjid(jobs, jid)->pid;
-    //             printf("[%d] (%d) %s\n", jid, pid, getjobjid(jobs, jid)->cmdline);
-    //             kill(-pid, SIGCONT);                             
-    //         }
-    //         // pid
-    //         else{ 
-    //             printf("HERE4");
-    //             int pid = atoi(argv[1]);
-    //             getjobpid(jobs,pid) -> state = BG; 
-    //             printf("[%d] (%d) %s\n", pid2jid(jobs, pid), pid, getjobpid(jobs, pid)->cmdline);
-    //             kill(-pid,SIGCONT);               
-    //         }
-    //     }
-    //     //foreground
-    //     else if(!strcmp(argv[0],"fg")){
-    //         printf("HERE5");
-    //         if(argv[1][0] == '%'){
-    //             //parse jid
-    //             int jid = atoi(&argv[1][1]);
-    //             getjobpid(jobs,jid) -> state = FG; 
-    //             pid_t pid = getjobjid(jobs, jid)->pid;  
-    //             kill(-pid, SIGCONT);  
-    //             waitfg(pid);                           
-    //         }
-    //         // pid
-    //         else{ 
-    //             printf("HERE6");
-    //             int pid = atoi(argv[1]);
-    //             getjobpid(jobs,pid) -> state = FG; 
-    //             kill(-pid,SIGCONT);  
-    //             waitfg(pid);             
-    //         }
-    //     }
-    //     else{
-    //         return;
-    //     }
-    // }
-    // else{
-    //     printf("Argument Required\n");
-    //     return;
-    // }
-    //return;
-    // }
 
 /* 
  * waitfg - Block until process pid is no longer the foreground process
  */
+//#Terry drove here
 void waitfg(pid_t pid)
 {
     while(fgpid(jobs) == pid)
@@ -330,7 +274,7 @@ void waitfg(pid_t pid)
 
     return;
 }
-
+//#End of Terry 
 /*****************
  * Signal handlers
  *****************/
@@ -343,6 +287,7 @@ void waitfg(pid_t pid)
  *     currently running children to terminate.  
  *     Some codes are borrowed from B&O pg. 727
  */
+  //#Jishen drove here
 void sigchld_handler(int sig) 
 {
     int status;
@@ -356,30 +301,25 @@ void sigchld_handler(int sig)
         }
         //terminated by SIGINT
         else if(WIFSIGNALED(status)){
-            //char string[80];
-            //sprintf(string, "Job [%d] (%d) terminated by signal 2\n",pid2jid(jobs, pid), pid);
-            // ssize_t bytes;
-            // bytes = write(1, "Blah\n", strlen("Blah\n"));
-            // if(bytes != 10)
-            //     exit(-999);
-        printf("Job [%d] (%d) terminated by signal 2\n", pid2jid(jobs, pid), pid);
+            printf("Job [%d] (%d) terminated by signal 2\n", pid2jid(jobs, pid), pid);
             deletejob(jobs,pid);
         }
         //stoped by SIGTSTP
         else if(WIFSTOPPED(status)){
             printf("Job [%d] (%d) stopped by signal 20\n", pid2jid(jobs, pid), pid);
-            getjobpid(jobs,pid)->state = ST;
+            (*getjobpid(jobs,pid)).state = ST;
         }
     }
 
     return;
 }
-
+//#End of Jishen driving
 /* 
  * sigint_handler - The kernel sends a SIGINT to the shell whenver the
  *    user types ctrl-c at the keyboard.  Catch it and send it along
  *    to the foreground job.  
  */
+//#Terry driving now
 void sigint_handler(int sig) 
 {
     kill(-fgpid(jobs),SIGINT);
@@ -396,6 +336,7 @@ void sigtstp_handler(int sig)
     kill(-fgpid(jobs), SIGTSTP);
     return;
 }
+//# end of Terry driving
 
 /*********************
  * End signal handlers

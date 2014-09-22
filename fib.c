@@ -57,6 +57,7 @@ int main(int argc, char **argv)
  * a new child for each call. Each process should call
  * doFib() exactly once.
  */
+ //#Jishen and Terry drove here
 static void 
 doFib(int n, int doPrint)
 {
@@ -80,6 +81,7 @@ doFib(int n, int doPrint)
   else{
     //first child process that do doFib(n-1)
     pid_1 = fork();
+  
     if(pid_1 == 0){
       doFib(n-1,0);
     }
@@ -92,9 +94,11 @@ doFib(int n, int doPrint)
         waitpid(-1,&status_1,0);
         status_1 = WEXITSTATUS(status_1);
         
+        //printf("status_1: %d\n", status_1);
         waitpid(-1,&status_2,0);
         status_2 = WEXITSTATUS(status_2);
         
+        //printf("status_2: %d\n", status_2);
         if(doPrint == 1){
           printf("%d\n", status_1+status_2);
         }

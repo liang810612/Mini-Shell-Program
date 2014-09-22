@@ -14,13 +14,14 @@ Slip days used:
 ################
 YOUR PARTNER'S INFO
 ################
-Name1:
-EID1:
-CS login:
-Email:
-Unique Number:
+Name1:Jishen
+EID1:jl46853
+CS login:jishen
+Email:ljs765@gmail.com
+Unique Number:53032
 
 Your partner's ranking (scale below):
+Very Good
 
 ################
 PARTNER EVALUATION SCALE
@@ -63,8 +64,26 @@ Questions regarding Part 0
   the processes beginning with 0 (the original process) and incrementing for
   each child process.
 
-(2) In part 0.3, which flavor of exec did you choose to use?  Why?
+  15 child processes are created when doFib() input is 5.
 
+  process 0 return 5
+  process 1 return 3
+  process 2 return 2
+  process 3 return 1
+  process 4 return 1
+  process 5 return 0
+  process 6 return 1
+  process 7 return 2
+  process 8 return 1
+  process 9 return 0
+  process 10 return 2
+  process 11 return 1
+  process 12 return 1
+  process 13 return 1
+  process 14 return 0  
+
+(2) In part 0.3, which flavor of exec did you choose to use?  Why?
+  execve(). One reason is that it was what the book used. And by documentation, it does not return on success, and the txt, data, bss, and stack of the calling process are overwritten by that of the program loaded. Therefore, modified child process and parent process can run on different program and won't have process collision happen.
 
 ################
 Questions regarding Part 1
@@ -72,17 +91,25 @@ Questions regarding Part 1
 (1) In the provided utility function Signal(), what does the call to
   sigaction() do?  Why was sigaction() used instead of signal()?
 
+  The sigaction() is used to change the action taken by a process on receipt of a specific signal. 
+  The advantage is that sigacation() blocks other signals until the current processed signal returns.
+
 (2) What is the last assembly language instruction executed by the
   signal handler function that you write?  (You may choose either signal
-  handler.)
+  handler.
+
+  0x00000000007009ae <+54>: retq
 
 (3) After the instruction identified in the previous question executes, 
   what is the next assembly language instruction executed?
+
+  0x7ffff7b507a4 <__restore_rt+7>:  syscall 
 
 (4) When the signal handler finishes running, it must restore all of
   the registers from the interrupted thread to exactly their values
   before the signal occurred. How is this done?
 
+  To restore the registers, the kernel process will execute the sigreturn(), which it will undoes everything that was done when interrupted. 
 
 ################
 Questions regarding Part 2
@@ -90,6 +117,9 @@ Questions regarding Part 2
 (1) In msh.c, we use three separate signal handlers to catch our signals. 
   You can also use a single signal handler to catch all three signals.  Is
   there a design advantage of one over the other?  Explain your answer.
+
+We use separate signal handlers to avoid the occurrence of a race condition. If we only use one signal handler, the share data from the threads might cause collision if they are different types of signals.
+I honestly don't know why then using a single signal handler to catch multiple signals.
 
 
 

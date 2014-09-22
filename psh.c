@@ -103,7 +103,8 @@ int main(int argc, char **argv)
  * the foreground, wait for it to terminate and then return. 
 */
 
-//Quote from book page 735
+//Code from book page 735
+//#Terry and Jishen drove here
 void eval(char *cmdline) 
 {
     char *argv[MAXARGS]; /* Argument list execve() */
@@ -149,6 +150,7 @@ void eval(char *cmdline)
  */
 
 //Quote from book page 735
+//#Terry and Jishen drove here 
 int builtin_cmd(char **argv) 
 {
     if (!strcmp(argv[0], "quit")) /* quit command */
